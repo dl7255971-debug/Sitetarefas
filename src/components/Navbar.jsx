@@ -1,6 +1,7 @@
-import { CheckSquare, BarChart2, Calendar, LogOut, Menu, X } from 'lucide-react'
+import { CheckSquare, BarChart2, Calendar, LogOut, Menu, X, User } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useProfile } from '../hooks/useProfile'
 
 const NAV_ITEMS = [
   { id: 'tarefas', label: 'Tarefas', icon: CheckSquare },
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
 export default function Navbar({ activePage, onPageChange, stats }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const { signOut } = useAuth()
+  const { profile } = useProfile()
 
   return (
     <header className="sticky top-0 z-40">
@@ -67,6 +69,27 @@ export default function Navbar({ activePage, onPageChange, stats }) {
                 <span className="text-amber-400 font-semibold">{stats.pending}</span> pendente{stats.pending !== 1 ? 's' : ''}
               </span>
             </div>
+            {/* Perfil Badge / Avatar */}
+            <button
+              onClick={() => onPageChange('perfil')}
+              className={`hidden md:flex items-center gap-2 pr-3 pl-1 py-1 rounded-full text-sm font-medium transition-all duration-200 border ${
+                activePage === 'perfil' 
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
+                  : 'bg-white/5 border-white/8 text-slate-300 hover:bg-white/10'
+              }`}
+              title="Meu Perfil"
+            >
+              <div className="w-7 h-7 rounded-full bg-surface-800 border border-white/10 flex items-center justify-center overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={14} className="text-slate-400" />
+                )}
+              </div>
+              <span className="max-w-[100px] truncate">
+                {profile?.username || 'Perfil'}
+              </span>
+            </button>
 
             {/* Botão Sair */}
             <button
@@ -106,6 +129,17 @@ export default function Navbar({ activePage, onPageChange, stats }) {
               </button>
             ))}
             <div className="pt-2 border-t border-white/6">
+              <button 
+                onClick={() => { onPageChange('perfil'); setMenuOpen(false); }}
+                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  activePage === 'perfil'
+                    ? 'text-amber-400 bg-amber-500/10'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                <User size={16} />
+                Meu Perfil
+              </button>
               <button 
                 onClick={() => { signOut(); setMenuOpen(false); }}
                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"

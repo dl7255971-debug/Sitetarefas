@@ -6,6 +6,7 @@ import FilterBar from './components/FilterBar'
 import Analytics from './components/Analytics'
 import CalendarView from './components/CalendarView'
 import Login from './components/Login'
+import Profile from './components/Profile'
 import { useTasks } from './hooks/useTasks'
 import { useAuth } from './hooks/useAuth'
 import { PRIORITIES } from './utils/constants'
@@ -183,6 +184,11 @@ function MainApp() {
         {/* === PÁGINA: CALENDÁRIO === */}
         {activePage === 'calendario' && (
           <CalendarView tasks={tasks} />
+        )}
+
+        {/* === PÁGINA: PERFIL === */}
+        {activePage === 'perfil' && (
+          <Profile />
         )}
       </main>
 
