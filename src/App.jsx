@@ -7,6 +7,7 @@ import Analytics from './components/Analytics'
 import CalendarView from './components/CalendarView'
 import Login from './components/Login'
 import Profile from './components/Profile'
+import AIAssistant from './components/AIAssistant'
 import { useTasks } from './hooks/useTasks'
 import { useAuth } from './hooks/useAuth'
 import { PRIORITIES } from './utils/constants'
@@ -189,6 +190,11 @@ function MainApp() {
         {/* === PÁGINA: PERFIL === */}
         {activePage === 'perfil' && (
           <Profile />
+        )}
+
+        {/* === PÁGINA: ASSISTENTE === */}
+        {activePage === 'assistente' && (
+          <AIAssistant tasks={tasks} />
         )}
       </main>
 

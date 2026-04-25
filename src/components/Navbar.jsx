@@ -1,4 +1,4 @@
-import { CheckSquare, BarChart2, Calendar, LogOut, Menu, X, User } from 'lucide-react'
+import { CheckSquare, BarChart2, Calendar, LogOut, Menu, X, User, Bot } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { id: 'tarefas', label: 'Tarefas', icon: CheckSquare },
   { id: 'analises', label: 'Análises', icon: BarChart2 },
   { id: 'calendario', label: 'Calendário', icon: Calendar },
+  { id: 'assistente', label: 'Assistente', icon: Bot },
 ]
 
 export default function Navbar({ activePage, onPageChange, stats }) {
