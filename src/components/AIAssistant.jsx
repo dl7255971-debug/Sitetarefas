@@ -3,6 +3,12 @@ import { Send, Bot, User, Sparkles, Loader2 } from 'lucide-react'
 import { useAI } from '../hooks/useAI'
 import { useProfile } from '../hooks/useProfile'
 
+const SUGGESTIONS = [
+  "O que devo fazer agora?",
+  "Me dê um resumo das tarefas",
+  "Estou me sentindo sobrecarregado"
+]
+
 export default function AIAssistant({ tasks }) {
   const { messages, isTyping, sendMessage } = useAI(tasks)
   const { profile } = useProfile()
@@ -22,6 +28,11 @@ export default function AIAssistant({ tasks }) {
     if (!input.trim() || isTyping) return
     sendMessage(input)
     setInput('')
+  }
+
+  const handleSuggestionClick = (text) => {
+    if (isTyping) return
+    sendMessage(text)
   }
 
   return (
@@ -91,6 +102,19 @@ export default function AIAssistant({ tasks }) {
 
         {/* Input Area */}
         <div className="p-4 border-t border-white/5 bg-surface-900/50 backdrop-blur-md">
+          {/* Sugestões */}
+          <div className="flex flex-wrap gap-2 mb-3">
+             {SUGGESTIONS.map((s, i) => (
+                <button 
+                  key={i} 
+                  onClick={() => handleSuggestionClick(s)}
+                  disabled={isTyping}
+                  className="px-3 py-1.5 text-xs font-medium bg-surface-800 border border-white/10 rounded-full text-slate-300 hover:text-amber-400 hover:border-amber-500/30 transition-colors disabled:opacity-50"
+                >
+                  {s}
+                </button>
+             ))}
+          </div>
           <form onSubmit={handleSubmit} className="relative flex items-center">
             <input
               type="text"
