@@ -32,7 +32,8 @@ export function useTasks() {
           category: taskData.category,
           priority: taskData.priority,
           dueDate: taskData.dueDate,
-          completed: false
+          completed: false,
+          subtasks: taskData.subtasks || []
         }])
         .select()
 
@@ -69,21 +70,54 @@ export function useTasks() {
     
     const newStatus = !task.completed
     
+    // Auto-complete subtasks if main task is completed
+    const updatedSubtasks = task.subtasks ? task.subtasks.map(st => ({ ...st, completed: newStatus })) : []
+
     // Optimistic update
     setTasks(prev => prev.map(t =>
-      t.id === id ? { ...t, completed: newStatus } : t
+      t.id === id ? { ...t, completed: newStatus, subtasks: updatedSubtasks } : t
     ))
 
     try {
       const { error } = await supabase
         .from('tasks')
-        .update({ completed: newStatus })
+        .update({ completed: newStatus, subtasks: updatedSubtasks })
         .eq('id', id)
 
       if (error) throw error
     } catch (error) {
       console.error('Erro ao alternar status da tarefa:', error)
       fetchTasks() // revert on error
+    }
+  }, [tasks])
+
+  const toggleSubtask = useCallback(async (taskId, subtaskId) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task || !task.subtasks) return
+
+    const newSubtasks = task.subtasks.map(st => 
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    )
+
+    const allSubtasksCompleted = newSubtasks.length > 0 && newSubtasks.every(st => st.completed)
+    // If all subtasks are completed, also complete the main task. If main task was completed but a subtask is unchecked, uncheck the main task.
+    const newTaskCompleted = allSubtasksCompleted ? true : (task.completed && !allSubtasksCompleted ? false : task.completed)
+
+    // Optimistic
+    setTasks(prev => prev.map(t => 
+      t.id === taskId ? { ...t, subtasks: newSubtasks, completed: newTaskCompleted } : t
+    ))
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ subtasks: newSubtasks, completed: newTaskCompleted })
+        .eq('id', taskId)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Erro ao alternar subtarefa:', error)
+      fetchTasks()
     }
   }, [tasks])
 
@@ -138,6 +172,6 @@ export function useTasks() {
       : 0,
   }
 
-  return { tasks, addTask, updateTask, toggleTask, deleteTask, clearCompleted, stats }
+  return { tasks, addTask, updateTask, toggleTask, toggleSubtask, deleteTask, clearCompleted, stats }
 }
 

@@ -32,7 +32,7 @@ export default function App() {
 }
 
 function MainApp() {
-  const { tasks, addTask, toggleTask, deleteTask, clearCompleted, stats } = useTasks()
+  const { tasks, addTask, updateTask, toggleTask, toggleSubtask, deleteTask, clearCompleted, stats } = useTasks()
   const [activePage, setActivePage] = useState('tarefas')
   const [activeFilter, setActiveFilter] = useState('todas')
   const [search, setSearch] = useState('')
@@ -164,6 +164,7 @@ function MainApp() {
                     key={task.id}
                     task={task}
                     onToggle={toggleTask}
+                    onToggleSubtask={toggleSubtask}
                     onDelete={deleteTask}
                   />
                 ))}

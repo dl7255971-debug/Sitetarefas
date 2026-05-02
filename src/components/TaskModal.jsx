@@ -1,4 +1,4 @@
-import { X, Plus, CalendarDays, Tag, Flag, FileText } from 'lucide-react'
+import { X, Plus, CalendarDays, Tag, Flag, FileText, CheckSquare, Trash2 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { CATEGORIES, PRIORITIES } from '../utils/constants'
 
@@ -7,6 +7,7 @@ const EMPTY_FORM = {
   category: 'trabalho',
   priority: 'média',
   dueDate: '',
+  subtasks: []
 }
 
 export default function TaskModal({ onClose, onSave, editTask = null }) {
@@ -15,6 +16,7 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
     category: editTask.category,
     priority: editTask.priority,
     dueDate: editTask.dueDate || '',
+    subtasks: editTask.subtasks || []
   } : EMPTY_FORM)
 
   const [errors, setErrors] = useState({})
@@ -37,9 +39,32 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     const errs = validate()
+    // Validar subtarefas vazias (opcional: remover subtarefas vazias antes de salvar)
+    const cleanedSubtasks = form.subtasks.filter(st => st.title.trim() !== '')
     if (Object.keys(errs).length) { setErrors(errs); return }
-    onSave({ ...form, title: form.title.trim() })
+    onSave({ ...form, title: form.title.trim(), subtasks: cleanedSubtasks })
     onClose()
+  }
+
+  const addSubtask = () => {
+    setForm(f => ({
+      ...f,
+      subtasks: [...f.subtasks, { id: crypto.randomUUID(), title: '', completed: false }]
+    }))
+  }
+
+  const removeSubtask = (id) => {
+    setForm(f => ({
+      ...f,
+      subtasks: f.subtasks.filter(st => st.id !== id)
+    }))
+  }
+
+  const updateSubtaskTitle = (id, title) => {
+    setForm(f => ({
+      ...f,
+      subtasks: f.subtasks.map(st => st.id === id ? { ...st, title } : st)
+    }))
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -166,6 +191,52 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
               onChange={(e) => setForm(f => ({ ...f, dueDate: e.target.value }))}
               style={{ colorScheme: 'dark' }}
             />
+          </div>
+
+          {/* Subtarefas */}
+          <div className="pt-2 border-t border-white/5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <CheckSquare size={12} />
+                Etapas do Projeto
+              </label>
+              <button
+                type="button"
+                onClick={addSubtask}
+                className="text-xs flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors bg-cyan-500/10 hover:bg-cyan-500/20 px-2 py-1 rounded-md"
+              >
+                <Plus size={12} /> Adicionar Etapa
+              </button>
+            </div>
+            
+            {form.subtasks.length > 0 ? (
+              <div className="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-1">
+                {form.subtasks.map((st, index) => (
+                  <div key={st.id} className="flex items-center gap-2 animate-fade-in group">
+                    <span className="text-xs font-medium text-slate-500 w-4 text-center">{index + 1}.</span>
+                    <input
+                      type="text"
+                      className="form-input py-1.5 text-sm flex-1 bg-white/[0.02]"
+                      placeholder="Descrição da etapa..."
+                      value={st.title}
+                      onChange={(e) => updateSubtaskTitle(st.id, e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSubtask(st.id)}
+                      className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      title="Remover etapa"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-sm text-slate-500 border border-dashed border-white/10 rounded-xl bg-white/5">
+                Nenhuma etapa. Divida sua tarefa em partes menores!
+              </div>
+            )}
           </div>
 
           {/* Preview das tags selecionadas */}
