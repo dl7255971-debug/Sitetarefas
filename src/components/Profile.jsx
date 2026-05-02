@@ -17,18 +17,20 @@ export default function Profile() {
   })
   const [isUpdating, setIsUpdating] = useState(false)
   const [message, setMessage] = useState({ text: '', type: '' })
+  const [isInitialized, setIsInitialized] = useState(false)
   const fileInputRef = useRef(null)
 
   // Sincronizar state inicial quando profile carregar
   useEffect(() => {
-    if (profile) {
-      if (username === '') setUsername(profile.username || '')
+    if (profile && !isInitialized) {
+      setUsername(profile.username || '')
       setPrefs({
         notify_email: profile.notify_email ?? false,
         notify_push: profile.notify_push ?? true
       })
+      setIsInitialized(true)
     }
-  }, [profile])
+  }, [profile, isInitialized])
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
@@ -172,7 +174,7 @@ export default function Profile() {
           </p>
           
           <div className="space-y-4">
-            <label className="flex items-center justify-between p-4 bg-surface-900/50 border border-white/10 rounded-xl cursor-pointer hover:border-amber-500/30 transition-all group">
+            <div className="flex items-center justify-between p-4 bg-surface-900/50 border border-white/10 rounded-xl hover:border-amber-500/30 transition-all group">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
                   <BellRing size={20} />
@@ -185,12 +187,12 @@ export default function Profile() {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTestNotification(); }}
-                  className="text-[10px] bg-amber-500 text-amber-950 font-bold px-2 py-1 rounded hover:bg-amber-400 transition-colors"
+                  onClick={handleTestNotification}
+                  className="text-[10px] bg-amber-500 text-amber-950 font-bold px-2 py-1 rounded hover:bg-amber-400 transition-colors z-10 cursor-pointer"
                 >
                   TESTAR
                 </button>
-                <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-surface-600">
+                <label className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-surface-600 cursor-pointer">
                   <input
                     type="checkbox"
                     className="sr-only peer"
@@ -198,9 +200,9 @@ export default function Profile() {
                     onChange={(e) => setPrefs(prev => ({ ...prev, notify_push: e.target.checked }))}
                   />
                   <div className={`h-5 w-5 rounded-full shadow transform transition-transform peer-checked:translate-x-5 ${prefs.notify_push ? 'bg-amber-500' : 'bg-white translate-x-1'}`} />
-                </div>
+                </label>
               </div>
-            </label>
+            </div>
 
             <label className="flex items-center justify-between p-4 bg-surface-900/50 border border-white/10 rounded-xl cursor-pointer hover:border-slate-500/30 transition-all group">
               <div className="flex items-center gap-3">
