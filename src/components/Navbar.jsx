@@ -1,5 +1,5 @@
-import { CheckSquare, BarChart2, Calendar, LogOut, Menu, X, User, Bot, Archive } from 'lucide-react'
-import { useState } from 'react'
+import { CheckSquare, BarChart2, Calendar, LogOut, Menu, X, User, Bot, Archive, Clock } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
 
@@ -13,8 +13,14 @@ const NAV_ITEMS = [
 
 export default function Navbar({ activePage, onPageChange, stats }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [time, setTime] = useState(new Date())
   const { signOut } = useAuth()
   const { profile } = useProfile()
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   return (
     <header className="sticky top-0 z-40">
@@ -64,6 +70,12 @@ export default function Navbar({ activePage, onPageChange, stats }) {
 
           {/* Lado direito */}
           <div className="flex items-center gap-3">
+            {/* Relógio */}
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-black/20 border border-white/5 rounded-xl font-mono text-xs text-amber-500/80 shadow-inner">
+              <Clock size={12} className="animate-pulse" />
+              <span>{time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            </div>
+
             {/* Stats badge */}
             <div className="hidden sm:flex items-center gap-2 text-xs bg-white/5 border border-white/8 rounded-full px-3 py-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />

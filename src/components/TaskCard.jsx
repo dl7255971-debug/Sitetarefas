@@ -1,8 +1,8 @@
-import { CalendarDays, Trash2, AlertCircle, ChevronDown, ChevronUp, FileText, Paperclip, CheckSquare, Repeat } from 'lucide-react'
+import { CalendarDays, Trash2, AlertCircle, ChevronDown, ChevronUp, FileText, Paperclip, CheckSquare, Repeat, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { CATEGORIES, PRIORITIES, formatDate, isOverdue, isDueToday } from '../utils/constants'
 
-export default function TaskCard({ task, onToggle, onToggleSubtask, onDelete }) {
+export default function TaskCard({ task, onToggle, onToggleSubtask, onDelete, onRestore }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const category = CATEGORIES[task.category] || CATEGORIES.pessoal
   const priority = PRIORITIES[task.priority] || PRIORITIES.baixa
@@ -82,13 +82,18 @@ export default function TaskCard({ task, onToggle, onToggleSubtask, onDelete }) 
           {task.title}
         </h3>
 
-        {/* Data de vencimento */}
-        {task.dueDate && (
+        {/* Data de vencimento e Hora */}
+        {(task.dueDate || task.due_time) && (
           <div className={`flex items-center gap-1.5 text-xs ${
             overdue ? 'text-rose-400' : 'text-slate-500'
           }`}>
             <CalendarDays size={12} />
-            <span>{formatDate(task.dueDate)}</span>
+            <span>{task.dueDate ? formatDate(task.dueDate) : 'Sem data'}</span>
+            {task.due_time && (
+              <span className="bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[10px] font-bold ml-1 border border-white/5">
+                {task.due_time.substring(0, 5)}
+              </span>
+            )}
           </div>
         )}
 
@@ -109,6 +114,17 @@ export default function TaskCard({ task, onToggle, onToggleSubtask, onDelete }) 
       </div>
 
       <div className="flex flex-col items-end gap-2">
+        {/* Botão Restaurar (apenas se arquivada) */}
+        {task.archived && onRestore && (
+          <button
+            onClick={() => onRestore(task.id)}
+            className="flex-shrink-0 p-2 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-all duration-200"
+            title="Restaurar para Minhas Tarefas"
+          >
+            <RotateCcw size={15} />
+          </button>
+        )}
+
         {/* Botão deletar */}
         <button
           onClick={() => {

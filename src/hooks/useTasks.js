@@ -33,6 +33,7 @@ export function useTasks() {
           category: taskData.category,
           priority: taskData.priority,
           dueDate: taskData.dueDate,
+          due_time: taskData.dueTime || null,
           completed: false,
           subtasks: taskData.subtasks || [],
           description: taskData.description || '',
@@ -204,6 +205,23 @@ export function useTasks() {
     }
   }, [])
 
+  const restoreTask = useCallback(async (id) => {
+    // Optimistic
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, archived: false } : t))
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ archived: false })
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Erro ao restaurar tarefa:', error)
+      fetchTasks()
+    }
+  }, [])
+
   const activeTasks = tasks.filter(t => !t.archived)
   
   const stats = {
@@ -223,6 +241,6 @@ export function useTasks() {
       : 0,
   }
 
-  return { tasks, addTask, updateTask, toggleTask, toggleSubtask, deleteTask, clearCompleted, stats }
+  return { tasks, addTask, updateTask, toggleTask, toggleSubtask, deleteTask, clearCompleted, restoreTask, stats }
 }
 

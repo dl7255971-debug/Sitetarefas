@@ -34,7 +34,7 @@ export default function App() {
 }
 
 function MainApp() {
-  const { tasks, addTask, updateTask, toggleTask, toggleSubtask, deleteTask, clearCompleted, stats } = useTasks()
+  const { tasks, addTask, updateTask, toggleTask, toggleSubtask, deleteTask, clearCompleted, restoreTask, stats } = useTasks()
   const { profile } = useProfile()
   
   // Ativar notificações push
@@ -245,6 +245,7 @@ function MainApp() {
                     onToggle={toggleTask}
                     onToggleSubtask={toggleSubtask}
                     onDelete={deleteTask}
+                    onRestore={restoreTask}
                   />
                 ))}
                 

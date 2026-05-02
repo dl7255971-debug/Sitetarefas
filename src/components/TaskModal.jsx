@@ -8,6 +8,7 @@ const EMPTY_FORM = {
   category: 'trabalho',
   priority: 'média',
   dueDate: '',
+  dueTime: '',
   subtasks: [],
   description: '',
   recurrence: { type: 'none' },
@@ -20,6 +21,7 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
     category: editTask.category,
     priority: editTask.priority,
     dueDate: editTask.dueDate || '',
+    dueTime: editTask.due_time || '',
     subtasks: editTask.subtasks || [],
     description: editTask.description || '',
     recurrence: editTask.recurrence || { type: 'none' },
@@ -297,12 +299,12 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
             </div>
           </div>
 
-          {/* Data de vencimento + Recorrência */}
+          {/* Data e Horário */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                 <CalendarDays size={12} />
-                Data de Conclusão
+                Data
               </label>
               <input
                 type="date"
@@ -316,25 +318,40 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
 
             <div>
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                <Repeat size={12} />
-                Repetir
+                <CalendarDays size={12} className="text-amber-500/60" />
+                Horário
               </label>
-              <div className="relative">
-                <select
-                  className="form-select"
-                  value={form.recurrence.type}
-                  onChange={(e) => setForm(f => ({ ...f, recurrence: { ...f.recurrence, type: e.target.value } }))}
-                >
-                  <option value="none">Não repetir</option>
-                  <option value="daily">Todo dia</option>
-                  <option value="weekly">Toda semana</option>
-                  <option value="monthly">Todo mês</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 4l4 4 4-4" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
+              <input
+                type="time"
+                className="form-input"
+                value={form.dueTime}
+                onChange={(e) => setForm(f => ({ ...f, dueTime: e.target.value }))}
+                style={{ colorScheme: 'dark' }}
+              />
+            </div>
+          </div>
+
+          {/* Recorrência */}
+          <div>
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <Repeat size={12} />
+              Repetir Tarefa
+            </label>
+            <div className="relative">
+              <select
+                className="form-select"
+                value={form.recurrence.type}
+                onChange={(e) => setForm(f => ({ ...f, recurrence: { ...f.recurrence, type: e.target.value } }))}
+              >
+                <option value="none">Não repetir</option>
+                <option value="daily">Todo dia</option>
+                <option value="weekly">Toda semana</option>
+                <option value="monthly">Todo mês</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 4l4 4 4-4" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
             </div>
           </div>
