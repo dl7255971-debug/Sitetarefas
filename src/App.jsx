@@ -189,6 +189,7 @@ function MainApp() {
               </div>
             )}
           </div>
+        )}
         {/* === PÁGINA: ARQUIVO === */}
         {activePage === 'arquivo' && (
           <div className="space-y-6 animate-fade-in">
