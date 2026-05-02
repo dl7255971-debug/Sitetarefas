@@ -20,11 +20,11 @@ export function useNotifications(tasks, profile) {
     return false
   }, [])
 
-  const sendNotification = useCallback((title, options) => {
+  const sendNotification = useCallback((title, options = {}) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     
     // Check if user enabled push notifications in their profile
-    if (profile && profile.notify_push === false) return
+    if (!options.force && profile && profile.notify_push === false) return
 
     new Notification(title, {
       icon: '/vite.svg', // Assuming standard vite icon is present
@@ -34,8 +34,9 @@ export function useNotifications(tasks, profile) {
 
   // Check for tasks due today on mount/change
   useEffect(() => {
+    if (!profile) return // Wait for profile to load
     // Only run if user wants notifications and granted permissions
-    if (profile && profile.notify_push === false) return
+    if (profile.notify_push === false) return
     if (!('Notification' in window) || Notification.permission !== 'granted') return
 
     const now = new Date()

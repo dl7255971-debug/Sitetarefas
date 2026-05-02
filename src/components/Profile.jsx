@@ -56,7 +56,8 @@ export default function Profile() {
     if (granted) {
       sendNotification('Teste de Notificação ✅', {
         body: 'Parabéns! Suas notificações do TaskFlow estão configuradas corretamente.',
-        tag: 'test-notification'
+        tag: 'test-notification',
+        force: true
       })
     } else {
       alert('Parece que as notificações estão bloqueadas no seu navegador. Por favor, autorize nas configurações do navegador (ícone de cadeado na barra de endereço).')
@@ -184,7 +185,7 @@ export default function Profile() {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); handleTestNotification(); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleTestNotification(); }}
                   className="text-[10px] bg-amber-500 text-amber-950 font-bold px-2 py-1 rounded hover:bg-amber-400 transition-colors"
                 >
                   TESTAR
