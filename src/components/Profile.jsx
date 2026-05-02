@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { User, Mail, Lock, Camera, Loader2, Save, Check, Bell, BellRing } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
@@ -7,7 +7,9 @@ import { useNotifications } from '../hooks/useNotifications'
 export default function Profile() {
   const { user } = useAuth()
   const { profile, loading, updateUsername, uploadAvatar, updatePassword, updatePreferences } = useProfile()
-  const { requestPermission, sendNotification } = useNotifications([], profile)
+  
+  const emptyTasks = useMemo(() => [], [])
+  const { requestPermission, sendNotification } = useNotifications(emptyTasks, profile)
   
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -23,6 +25,7 @@ export default function Profile() {
   // Sincronizar state inicial quando profile carregar
   useEffect(() => {
     if (profile && !isInitialized) {
+      console.log('Inicializando estado do perfil:', profile)
       setUsername(profile.username || '')
       setPrefs({
         notify_email: profile.notify_email ?? false,
@@ -31,6 +34,13 @@ export default function Profile() {
       setIsInitialized(true)
     }
   }, [profile, isInitialized])
+
+  // Monitorar mudanças no prefs para depuração
+  useEffect(() => {
+    if (isInitialized) {
+      console.log('Preferências locais alteradas:', prefs)
+    }
+  }, [prefs, isInitialized])
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
@@ -188,19 +198,37 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={handleTestNotification}
-                  className="text-[10px] bg-amber-500 text-amber-950 font-bold px-2 py-1 rounded hover:bg-amber-400 transition-colors z-10 cursor-pointer"
+                  className="text-[10px] bg-amber-500 text-amber-950 font-bold px-2 py-1 rounded hover:bg-amber-400 transition-colors z-10 cursor-pointer disabled:opacity-50"
+                  title="Testar notificações agora"
                 >
                   TESTAR
                 </button>
-                <label className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-surface-600 cursor-pointer">
+                <div className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
+                    id="push-toggle"
                     className="sr-only peer"
                     checked={prefs.notify_push}
-                    onChange={(e) => setPrefs(prev => ({ ...prev, notify_push: e.target.checked }))}
+                    onChange={async (e) => {
+                      const isChecked = e.target.checked
+                      console.log('Toggle push alterado para:', isChecked)
+                      setPrefs(prev => ({ ...prev, notify_push: isChecked }))
+                      
+                      if (isChecked) {
+                        const granted = await requestPermission()
+                        if (!granted) {
+                          alert('As notificações estão desativadas no seu navegador. Para que funcionem, você precisa autorizá-las nas configurações do navegador.')
+                        }
+                      }
+                    }}
                   />
-                  <div className={`h-5 w-5 rounded-full shadow transform transition-transform peer-checked:translate-x-5 ${prefs.notify_push ? 'bg-amber-500' : 'bg-white translate-x-1'}`} />
-                </label>
+                  <label 
+                    htmlFor="push-toggle"
+                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none cursor-pointer ${prefs.notify_push ? 'bg-amber-500' : 'bg-surface-600'}`}
+                  >
+                    <div className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transform transition-transform ${prefs.notify_push ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </label>
+                </div>
               </div>
             </div>
 

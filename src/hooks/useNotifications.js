@@ -14,6 +14,7 @@ export function useNotifications(tasks, profile) {
 
     if (Notification.permission !== 'denied') {
       const permission = await Notification.requestPermission()
+      console.log('Permissão de notificação solicitada:', permission)
       return permission === 'granted'
     }
 
@@ -21,27 +22,43 @@ export function useNotifications(tasks, profile) {
   }, [])
 
   const sendNotification = useCallback((title, options = {}) => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return
+    if (!('Notification' in window)) {
+      console.warn('Notificações não suportadas neste navegador.')
+      return
+    }
+
+    if (Notification.permission !== 'granted') {
+      console.warn('Notificações bloqueadas pelo navegador ou permissão não solicitada.')
+      return
+    }
     
     // Check if user enabled push notifications in their profile
-    if (!options.force && profile && profile.notify_push === false) return
+    // We only skip if force is NOT true AND notify_push is explicitly false
+    if (!options.force && profile && profile.notify_push === false) {
+      console.log('Notificação ignorada: usuário desativou notificações push no perfil.')
+      return
+    }
 
-    new Notification(title, {
-      icon: '/vite.svg', // Assuming standard vite icon is present
-      ...options
-    })
+    console.log('Enviando notificação:', title, options)
+    try {
+      new Notification(title, {
+        icon: '/vite.svg',
+        ...options
+      })
+    } catch (err) {
+      console.error('Erro ao criar notificação:', err)
+    }
   }, [profile])
 
   // Check for tasks due today on mount/change
   useEffect(() => {
-    if (!profile) return // Wait for profile to load
+    if (!profile) return 
+    
     // Only run if user wants notifications and granted permissions
     if (profile.notify_push === false) return
     if (!('Notification' in window) || Notification.permission !== 'granted') return
 
     const now = new Date()
-    // Don't spam notifications every render. Only notify once per session/day maybe?
-    // We can use sessionStorage to track if we already notified today
     const lastNotifiedDate = sessionStorage.getItem('last_notified_date')
     const todayStr = now.toDateString()
 
