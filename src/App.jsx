@@ -122,12 +122,12 @@ function MainApp() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 {hasCompleted && (
                   <button
-                    className="btn-ghost flex items-center gap-2 text-xs"
+                    className="btn-ghost flex items-center gap-2 text-xs text-amber-500/80 hover:text-amber-400"
                     onClick={clearCompleted}
-                    title="Limpar concluídas"
+                    title="Enviar tarefas concluídas para o arquivo morto"
                   >
-                    <Trash2 size={14} />
-                    <span className="hidden sm:inline">Limpar concluídas</span>
+                    <Archive size={14} />
+                    <span className="hidden sm:inline">Enviar para Arquivo Morto</span>
                   </button>
                 )}
                 <button
@@ -203,7 +203,7 @@ function MainApp() {
                   </span>
                 </div>
                 <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-100 leading-tight">
-                  Arquivo de <span className="text-gradient">Tarefas</span>
+                  Arquivo <span className="text-gradient">Morto</span>
                 </h1>
                 <p className="text-slate-500 text-sm mt-1.5">
                   Consulte tarefas concluídas anteriormente. Você pode pesquisar por título ou categoria.

@@ -111,10 +111,14 @@ export default function TaskCard({ task, onToggle, onToggleSubtask, onDelete }) 
       <div className="flex flex-col items-end gap-2">
         {/* Botão deletar */}
         <button
-          onClick={() => onDelete(task.id)}
+          onClick={() => {
+            if (window.confirm('Tem certeza que deseja excluir essa tarefa?')) {
+              onDelete(task.id)
+            }
+          }}
           className="flex-shrink-0 p-2 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100"
           aria-label={`Excluir tarefa "${task.title}"`}
-          title="Excluir tarefa"
+          title="Excluir tarefa permanentemente"
         >
           <Trash2 size={15} />
         </button>

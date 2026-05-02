@@ -5,7 +5,7 @@ import { useProfile } from '../hooks/useProfile'
 
 const NAV_ITEMS = [
   { id: 'tarefas', label: 'Tarefas', icon: CheckSquare },
-  { id: 'arquivo', label: 'Arquivo', icon: Archive },
+  { id: 'arquivo', label: 'Arquivo Morto', icon: Archive },
   { id: 'analises', label: 'Análises', icon: BarChart2 },
   { id: 'calendario', label: 'Calendário', icon: Calendar },
   { id: 'assistente', label: 'Assistente', icon: Bot },
