@@ -97,6 +97,13 @@ export default function TaskCard({ task, onToggle, onToggleSubtask, onDelete, on
           </div>
         )}
 
+        {/* Horário de criação */}
+        {task.createdAt && (
+          <div className="mt-2 text-[10px] text-slate-600 flex items-center gap-1 italic">
+            <span>Criada às {new Date(task.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        )}
+
         {/* Progresso de Subtarefas */}
         {hasSubtasks && (
           <div className="mt-3.5 flex items-center gap-3">
