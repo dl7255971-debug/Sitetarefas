@@ -71,9 +71,14 @@ export default function Navbar({ activePage, onPageChange, stats }) {
           {/* Lado direito */}
           <div className="flex items-center gap-3">
             {/* Relógio */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-black/20 border border-white/5 rounded-xl font-mono text-xs text-amber-500/80 shadow-inner">
-              <Clock size={12} className="animate-pulse" />
-              <span>{time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-black/20 border border-white/5 rounded-xl font-mono text-xs text-amber-500/80 shadow-inner">
+              <Clock size={12} className="animate-pulse hidden xs:block" />
+              <span className="hidden sm:block">
+                {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+              <span className="sm:hidden font-bold">
+                {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
 
             {/* Stats badge */}
