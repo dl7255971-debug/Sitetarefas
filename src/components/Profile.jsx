@@ -2,10 +2,12 @@ import { useState, useRef } from 'react'
 import { User, Mail, Lock, Camera, Loader2, Save, Check, Bell, BellRing } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
+import { useNotifications } from '../hooks/useNotifications'
 
 export default function Profile() {
   const { user } = useAuth()
   const { profile, loading, updateUsername, uploadAvatar, updatePassword, updatePreferences } = useProfile()
+  const { requestPermission, sendNotification } = useNotifications([], profile)
   
   const [username, setUsername] = useState(profile?.username || '')
   const [password, setPassword] = useState('')
@@ -150,6 +152,70 @@ export default function Profile() {
           </div>
         )}
 
+        {/* NOVO: Notificações no TOPO para maior visibilidade */}
+        <div className="mb-8 bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 shadow-xl shadow-amber-500/5">
+          <h4 className="text-lg font-bold text-amber-400 mb-2 flex items-center gap-2">
+            <Bell size={20} className="text-amber-400" />
+            Configurações de Notificação
+          </h4>
+          <p className="text-sm text-slate-400 mb-5">
+            Ative para não esquecer suas tarefas importantes.
+          </p>
+          
+          <div className="space-y-4">
+            <label className="flex items-center justify-between p-4 bg-surface-900/50 border border-white/10 rounded-xl cursor-pointer hover:border-amber-500/30 transition-all group">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400">
+                  <BellRing size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-100">Notificações Push</p>
+                  <p className="text-xs text-slate-500">Alertas em tempo real no navegador</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); handleTestNotification(); }}
+                  className="text-[10px] bg-amber-500 text-amber-950 font-bold px-2 py-1 rounded hover:bg-amber-400 transition-colors"
+                >
+                  TESTAR
+                </button>
+                <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-surface-600">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={prefs.notify_push}
+                    onChange={(e) => setPrefs(prev => ({ ...prev, notify_push: e.target.checked }))}
+                  />
+                  <div className={`h-5 w-5 rounded-full bg-white shadow transform transition-transform peer-checked:translate-x-5 ${prefs.notify_push ? 'bg-amber-500 !translate-x-5' : 'translate-x-1'}`} />
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-center justify-between p-4 bg-surface-900/50 border border-white/10 rounded-xl cursor-pointer hover:border-slate-500/30 transition-all group">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-slate-500/10 text-slate-400">
+                  <Mail size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-100">Notificações por E-mail</p>
+                  <p className="text-xs text-slate-500">Resumos diários na sua caixa de entrada</p>
+                </div>
+              </div>
+              <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-surface-600">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={prefs.notify_email}
+                  onChange={(e) => setPrefs(prev => ({ ...prev, notify_email: e.target.checked }))}
+                />
+                <div className={`h-5 w-5 rounded-full bg-white shadow transform transition-transform peer-checked:translate-x-5 ${prefs.notify_email ? 'bg-amber-500 !translate-x-5' : 'translate-x-1'}`} />
+              </div>
+            </label>
+          </div>
+        </div>
+
         {/* Form Section */}
         <form onSubmit={handleSaveProfile} className="space-y-5">
           <div>
@@ -168,60 +234,6 @@ export default function Profile() {
                 className="w-full bg-surface-800/50 border border-surface-700 rounded-xl pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
                 placeholder="Como quer ser chamado?"
               />
-            </div>
-          </div>
-
-            <p className="mt-1.5 text-xs text-slate-500">Mínimo de 6 caracteres.</p>
-          </div>
-
-          <div className="pt-4 border-t border-white/5">
-            <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
-              <Bell size={16} className="text-amber-500/70" />
-              Preferências de Notificação
-            </h4>
-            
-            <div className="space-y-4">
-              <label className="flex items-center justify-between p-3.5 bg-surface-800/30 border border-surface-700 rounded-xl cursor-pointer hover:bg-surface-800/50 transition-colors group">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20 transition-colors">
-                    <BellRing size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Notificações Push</p>
-                    <p className="text-xs text-slate-500">Receber alertas no navegador</p>
-                  </div>
-                </div>
-                <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-surface-600">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={prefs.notify_push}
-                    onChange={(e) => setPrefs(prev => ({ ...prev, notify_push: e.target.checked }))}
-                  />
-                  <div className={`h-5 w-5 rounded-full bg-white shadow transform transition-transform peer-checked:translate-x-5 ${prefs.notify_push ? 'bg-amber-500 !translate-x-5' : 'translate-x-1'}`} />
-                </div>
-              </label>
-
-              <label className="flex items-center justify-between p-3.5 bg-surface-800/30 border border-surface-700 rounded-xl cursor-pointer hover:bg-surface-800/50 transition-colors group">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-slate-500/10 text-slate-400 group-hover:bg-slate-500/20 transition-colors">
-                    <Mail size={18} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Notificações por E-mail</p>
-                    <p className="text-xs text-slate-500">Receber resumos e lembretes por e-mail</p>
-                  </div>
-                </div>
-                <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-surface-600">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={prefs.notify_email}
-                    onChange={(e) => setPrefs(prev => ({ ...prev, notify_email: e.target.checked }))}
-                  />
-                  <div className={`h-5 w-5 rounded-full bg-white shadow transform transition-transform peer-checked:translate-x-5 ${prefs.notify_email ? 'bg-amber-500 !translate-x-5' : 'translate-x-1'}`} />
-                </div>
-              </label>
             </div>
           </div>
 

@@ -175,6 +175,79 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
             </div>
           </div>
 
+          {/* NOVO: Descrição e Anexos no TOPO para maior visibilidade */}
+          <div className="grid grid-cols-1 gap-5 bg-white/[0.03] p-4 rounded-2xl border border-white/5">
+            {/* Descrição detalhada */}
+            <div>
+              <label className="flex items-center gap-2 text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-2">
+                <FileText size={12} />
+                Descrição Detalhada
+              </label>
+              <textarea
+                className="form-input min-h-[80px] py-3 resize-none bg-black/20"
+                placeholder="Adicione mais detalhes sobre esta tarefa..."
+                value={form.description}
+                onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+
+            {/* Anexos e Fotos */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-wider">
+                  <Paperclip size={12} />
+                  Anexos e Fotos
+                </label>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="text-xs flex items-center gap-1.5 text-amber-900 bg-amber-400 hover:bg-amber-300 transition-all px-3 py-1.5 rounded-lg font-bold shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                >
+                  {uploading ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                  ADICIONAR FOTO
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  accept="image/*,application/pdf"
+                />
+              </div>
+
+              {form.attachments.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {form.attachments.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-2 animate-fade-in group/file">
+                      {file.type.startsWith('image/') ? (
+                        <div className="w-10 h-10 rounded bg-slate-800 flex items-center justify-center overflow-hidden border border-white/10">
+                          <img src={file.url} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-slate-800 flex items-center justify-center border border-white/10">
+                          <FileText size={16} className="text-slate-400" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-slate-300 max-w-[100px] truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(idx)}
+                          className="text-[9px] text-rose-400 hover:underline text-left"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-slate-500 italic">Nenhuma imagem anexada ainda.</p>
+              )}
+            </div>
+          </div>
+
           {/* Linha: Categoria + Prioridade */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -266,71 +339,7 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
             </div>
           </div>
 
-          {/* Descrição detalhada */}
-          <div>
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              <FileText size={12} />
-              Descrição Detalhada
-            </label>
-            <textarea
-              className="form-input min-h-[100px] py-3 resize-none"
-              placeholder="Adicione mais detalhes sobre esta tarefa..."
-              value={form.description}
-              onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
-            />
-          </div>
 
-          {/* Anexos e Fotos */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                <Paperclip size={12} />
-                Anexos e Fotos
-              </label>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="text-xs flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded-md disabled:opacity-50"
-              >
-                {uploading ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                Upload
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={handleFileUpload}
-                accept="image/*,application/pdf"
-              />
-            </div>
-
-            {form.attachments.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {form.attachments.map((file, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-2 animate-fade-in group/file">
-                    {file.type.startsWith('image/') ? (
-                      <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center overflow-hidden">
-                        <img src={file.url} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center">
-                        <FileText size={14} className="text-slate-400" />
-                      </div>
-                    )}
-                    <span className="text-xs text-slate-300 max-w-[100px] truncate">{file.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeAttachment(idx)}
-                      className="text-slate-500 hover:text-rose-400 transition-colors"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Subtarefas */}
           <div className="pt-2 border-t border-white/5">
