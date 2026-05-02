@@ -116,12 +116,32 @@ export function useProfile() {
     }
   }
 
+  const updatePreferences = async (preferences) => {
+    if (!user) return
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ ...preferences, updated_at: new Date().toISOString() })
+        .eq('id', user.id)
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) setProfile(data)
+      return { data, error: null }
+    } catch (error) {
+      console.error('Erro ao atualizar preferências:', error)
+      return { data: null, error }
+    }
+  }
+
   return {
     profile,
     loading,
     updateUsername,
     uploadAvatar,
     updatePassword,
+    updatePreferences,
     refreshProfile: fetchProfile
   }
 }

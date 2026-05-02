@@ -10,8 +10,10 @@ import Profile from './components/Profile'
 import AIAssistant from './components/AIAssistant'
 import { useTasks } from './hooks/useTasks'
 import { useAuth } from './hooks/useAuth'
+import { useProfile } from './hooks/useProfile'
+import { useNotifications } from './hooks/useNotifications'
 import { PRIORITIES } from './utils/constants'
-import { Plus, CheckSquare2, Sparkles, Trash2, Loader2 } from 'lucide-react'
+import { Plus, CheckSquare2, Sparkles, Trash2, Loader2, Archive } from 'lucide-react'
 
 export default function App() {
   const { user, loading } = useAuth()
@@ -33,6 +35,10 @@ export default function App() {
 
 function MainApp() {
   const { tasks, addTask, updateTask, toggleTask, toggleSubtask, deleteTask, clearCompleted, stats } = useTasks()
+  const { profile } = useProfile()
+  
+  // Ativar notificações push
+  useNotifications(tasks, profile)
   const [activePage, setActivePage] = useState('tarefas')
   const [activeFilter, setActiveFilter] = useState('todas')
   const [search, setSearch] = useState('')
@@ -42,9 +48,16 @@ function MainApp() {
   const filteredTasks = useMemo(() => {
     let list = tasks
 
-    // Filtro por status
-    if (activeFilter === 'pendentes') list = list.filter(t => !t.completed)
-    if (activeFilter === 'concluídas') list = list.filter(t => t.completed)
+    // Filtrar por página (Ativos vs Arquivados)
+    if (activePage === 'arquivo') {
+      list = list.filter(t => t.archived)
+    } else {
+      list = list.filter(t => !t.archived)
+      
+      // Filtro por status (apenas na página de tarefas)
+      if (activeFilter === 'pendentes') list = list.filter(t => !t.completed)
+      if (activeFilter === 'concluídas') list = list.filter(t => t.completed)
+    }
 
     // Filtro por busca
     if (search.trim()) {
@@ -62,9 +75,9 @@ function MainApp() {
       const pb = PRIORITIES[b.priority]?.order ?? 99
       return pa - pb
     })
-  }, [tasks, activeFilter, search])
+  }, [tasks, activePage, activeFilter, search])
 
-  const hasCompleted = tasks.some(t => t.completed)
+  const hasCompleted = tasks.some(t => t.completed && !t.archived)
 
   return (
     <div className="min-h-screen bg-surface-900 relative overflow-x-hidden">
@@ -172,6 +185,70 @@ function MainApp() {
                 {/* Contador de resultados */}
                 <p className="text-center text-xs text-slate-600 pt-2">
                   Exibindo {filteredTasks.length} de {tasks.length} tarefa{tasks.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+          </div>
+        {/* === PÁGINA: ARQUIVO === */}
+        {activePage === 'arquivo' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header do Arquivo */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Archive size={14} className="text-slate-500" />
+                  <span className="text-xs text-slate-500 font-medium tracking-wider uppercase">
+                    Histórico de Conclusão
+                  </span>
+                </div>
+                <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-100 leading-tight">
+                  Arquivo de <span className="text-gradient">Tarefas</span>
+                </h1>
+                <p className="text-slate-500 text-sm mt-1.5">
+                  Consulte tarefas concluídas anteriormente. Você pode pesquisar por título ou categoria.
+                </p>
+              </div>
+            </div>
+
+            {/* Busca simplificada para o arquivo */}
+            <FilterBar
+              activeFilter="todas"
+              onFilterChange={() => {}}
+              search={search}
+              onSearchChange={setSearch}
+              hideFilters={true}
+            />
+
+            {/* Lista de tarefas arquivadas */}
+            {filteredTasks.length === 0 ? (
+              <div className="glass-card p-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/5">
+                  <Archive size={28} className="text-slate-600" />
+                </div>
+                <h3 className="font-display text-lg font-semibold text-slate-400 mb-2">
+                  O arquivo está vazio
+                </h3>
+                <p className="text-slate-600 text-sm max-w-xs mx-auto">
+                  {search 
+                    ? `Nenhuma tarefa arquivada corresponde a "${search}".`
+                    : 'Tarefas concluídas que você "Limpar" aparecerão aqui automaticamente.'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {filteredTasks.map(task => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onToggleSubtask={toggleSubtask}
+                    onDelete={deleteTask}
+                  />
+                ))}
+                
+                <p className="text-center text-xs text-slate-600 pt-4 italic">
+                  Você está visualizando o arquivo histórico.
                 </p>
               </div>
             )}

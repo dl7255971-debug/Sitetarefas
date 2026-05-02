@@ -1,22 +1,24 @@
 import { FILTERS } from '../utils/constants'
 import { Search, X } from 'lucide-react'
 
-export default function FilterBar({ activeFilter, onFilterChange, search, onSearchChange }) {
+export default function FilterBar({ activeFilter, onFilterChange, search, onSearchChange, hideFilters = false }) {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
       {/* Pills de filtro */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {FILTERS.map(f => (
-          <button
-            key={f.value}
-            className={`filter-pill ${activeFilter === f.value ? 'active' : ''}`}
-            onClick={() => onFilterChange(f.value)}
-            aria-pressed={activeFilter === f.value}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      {!hideFilters && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {FILTERS.map(f => (
+            <button
+              key={f.value}
+              className={`filter-pill ${activeFilter === f.value ? 'active' : ''}`}
+              onClick={() => onFilterChange(f.value)}
+              aria-pressed={activeFilter === f.value}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Busca */}
       <div className="relative flex-1 sm:max-w-xs ml-auto">

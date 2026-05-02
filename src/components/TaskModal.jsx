@@ -1,13 +1,17 @@
-import { X, Plus, CalendarDays, Tag, Flag, FileText, CheckSquare, Trash2 } from 'lucide-react'
+import { X, Plus, CalendarDays, Tag, Flag, FileText, CheckSquare, Trash2, Paperclip, Image, Repeat, Loader2 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { CATEGORIES, PRIORITIES } from '../utils/constants'
+import { supabase } from '../utils/supabase'
 
 const EMPTY_FORM = {
   title: '',
   category: 'trabalho',
   priority: 'média',
   dueDate: '',
-  subtasks: []
+  subtasks: [],
+  description: '',
+  recurrence: { type: 'none' },
+  attachments: []
 }
 
 export default function TaskModal({ onClose, onSave, editTask = null }) {
@@ -16,11 +20,16 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
     category: editTask.category,
     priority: editTask.priority,
     dueDate: editTask.dueDate || '',
-    subtasks: editTask.subtasks || []
+    subtasks: editTask.subtasks || [],
+    description: editTask.description || '',
+    recurrence: editTask.recurrence || { type: 'none' },
+    attachments: editTask.attachments || []
   } : EMPTY_FORM)
 
   const [errors, setErrors] = useState({})
+  const [uploading, setUploading] = useState(false)
   const titleRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     titleRef.current?.focus()
@@ -67,6 +76,44 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
     }))
   }
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    try {
+      setUploading(true)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${crypto.randomUUID()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('task-attachments')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(filePath)
+
+      setForm(f => ({
+        ...f,
+        attachments: [...f.attachments, { name: file.name, url: publicUrl, type: file.type }]
+      }))
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeAttachment = (index) => {
+    setForm(f => ({
+      ...f,
+      attachments: f.attachments.filter((_, i) => i !== index)
+    }))
+  }
+
   const today = new Date().toISOString().split('T')[0]
 
   return (
@@ -77,7 +124,7 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
       aria-modal="true"
       aria-label={editTask ? 'Editar tarefa' : 'Nova tarefa'}
     >
-      <div className="glass-card w-full max-w-lg animate-scale-in" style={{ background: 'rgba(20,23,32,0.97)' }}>
+      <div className="glass-card w-full max-w-lg animate-scale-in max-h-[90vh] overflow-y-auto custom-scrollbar" style={{ background: 'rgba(20,23,32,0.97)' }}>
         {/* Header do modal */}
         <div className="flex items-center justify-between p-6 pb-0">
           <div>
@@ -177,20 +224,112 @@ export default function TaskModal({ onClose, onSave, editTask = null }) {
             </div>
           </div>
 
-          {/* Data de vencimento */}
+          {/* Data de vencimento + Recorrência */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <CalendarDays size={12} />
+                Data de Conclusão
+              </label>
+              <input
+                type="date"
+                className="form-input"
+                min={today}
+                value={form.dueDate}
+                onChange={(e) => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                style={{ colorScheme: 'dark' }}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <Repeat size={12} />
+                Repetir
+              </label>
+              <div className="relative">
+                <select
+                  className="form-select"
+                  value={form.recurrence.type}
+                  onChange={(e) => setForm(f => ({ ...f, recurrence: { ...f.recurrence, type: e.target.value } }))}
+                >
+                  <option value="none">Não repetir</option>
+                  <option value="daily">Todo dia</option>
+                  <option value="weekly">Toda semana</option>
+                  <option value="monthly">Todo mês</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 4l4 4 4-4" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Descrição detalhada */}
           <div>
             <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              <CalendarDays size={12} />
-              Data de Conclusão
+              <FileText size={12} />
+              Descrição Detalhada
             </label>
-            <input
-              type="date"
-              className="form-input"
-              min={today}
-              value={form.dueDate}
-              onChange={(e) => setForm(f => ({ ...f, dueDate: e.target.value }))}
-              style={{ colorScheme: 'dark' }}
+            <textarea
+              className="form-input min-h-[100px] py-3 resize-none"
+              placeholder="Adicione mais detalhes sobre esta tarefa..."
+              value={form.description}
+              onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
             />
+          </div>
+
+          {/* Anexos e Fotos */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <Paperclip size={12} />
+                Anexos e Fotos
+              </label>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="text-xs flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded-md disabled:opacity-50"
+              >
+                {uploading ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                Upload
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileUpload}
+                accept="image/*,application/pdf"
+              />
+            </div>
+
+            {form.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.attachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-2 animate-fade-in group/file">
+                    {file.type.startsWith('image/') ? (
+                      <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center overflow-hidden">
+                        <img src={file.url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center">
+                        <FileText size={14} className="text-slate-400" />
+                      </div>
+                    )}
+                    <span className="text-xs text-slate-300 max-w-[100px] truncate">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(idx)}
+                      className="text-slate-500 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Subtarefas */}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../utils/supabase'
+import { addDays, addWeeks, addMonths, format } from 'date-fns'
 
 export function useTasks() {
   const [tasks, setTasks] = useState([])
@@ -33,7 +34,11 @@ export function useTasks() {
           priority: taskData.priority,
           dueDate: taskData.dueDate,
           completed: false,
-          subtasks: taskData.subtasks || []
+          subtasks: taskData.subtasks || [],
+          description: taskData.description || '',
+          attachments: taskData.attachments || [],
+          recurrence: taskData.recurrence || null,
+          archived: false
         }])
         .select()
 
@@ -73,10 +78,34 @@ export function useTasks() {
     // Auto-complete subtasks if main task is completed
     const updatedSubtasks = task.subtasks ? task.subtasks.map(st => ({ ...st, completed: newStatus })) : []
 
+    // Recurrence Logic
+    let recurrenceTaskToCreate = null;
+    if (newStatus && task.recurrence && task.recurrence.type !== 'none') {
+      let nextDate = new Date(task.dueDate ? task.dueDate + 'T12:00:00' : new Date());
+      if (task.recurrence.type === 'daily') nextDate = addDays(nextDate, 1);
+      else if (task.recurrence.type === 'weekly') nextDate = addWeeks(nextDate, 1);
+      else if (task.recurrence.type === 'monthly') nextDate = addMonths(nextDate, 1);
+      
+      recurrenceTaskToCreate = {
+        ...task,
+        id: crypto.randomUUID(), // optimistic ID
+        completed: false,
+        dueDate: format(nextDate, 'yyyy-MM-dd'),
+        subtasks: task.subtasks ? task.subtasks.map(st => ({...st, completed: false})) : [],
+        createdAt: new Date().toISOString()
+      };
+    }
+
     // Optimistic update
-    setTasks(prev => prev.map(t =>
-      t.id === id ? { ...t, completed: newStatus, subtasks: updatedSubtasks } : t
-    ))
+    setTasks(prev => {
+      let newList = prev.map(t =>
+        t.id === id ? { ...t, completed: newStatus, subtasks: updatedSubtasks } : t
+      )
+      if (recurrenceTaskToCreate) {
+        newList = [recurrenceTaskToCreate, ...newList]
+      }
+      return newList
+    })
 
     try {
       const { error } = await supabase
@@ -85,6 +114,25 @@ export function useTasks() {
         .eq('id', id)
 
       if (error) throw error
+
+      if (recurrenceTaskToCreate) {
+        const { id: optId, ...rest } = recurrenceTaskToCreate;
+        const { data: recData, error: recError } = await supabase.from('tasks').insert([{
+          title: rest.title,
+          category: rest.category,
+          priority: rest.priority,
+          dueDate: rest.dueDate,
+          completed: false,
+          subtasks: rest.subtasks,
+          description: rest.description,
+          attachments: rest.attachments,
+          recurrence: rest.recurrence
+        }]).select()
+        
+        if (!recError && recData && recData.length > 0) {
+          setTasks(prev => prev.map(t => t.id === optId ? recData[0] : t))
+        }
+      }
     } catch (error) {
       console.error('Erro ao alternar status da tarefa:', error)
       fetchTasks() // revert on error
@@ -140,35 +188,38 @@ export function useTasks() {
 
   const clearCompleted = useCallback(async () => {
     // Optimistic
-    setTasks(prev => prev.filter(t => !t.completed))
+    setTasks(prev => prev.map(t => t.completed && !t.archived ? { ...t, archived: true } : t))
 
     try {
       const { error } = await supabase
         .from('tasks')
-        .delete()
+        .update({ archived: true })
         .eq('completed', true)
+        .eq('archived', false)
 
       if (error) throw error
     } catch (error) {
-      console.error('Erro ao limpar tarefas concluídas:', error)
+      console.error('Erro ao arquivar tarefas concluídas:', error)
       fetchTasks()
     }
   }, [])
 
+  const activeTasks = tasks.filter(t => !t.archived)
+  
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.completed).length,
-    pending: tasks.filter(t => !t.completed).length,
-    alta: tasks.filter(t => t.priority === 'alta' && !t.completed).length,
+    total: activeTasks.length,
+    completed: activeTasks.filter(t => t.completed).length,
+    pending: activeTasks.filter(t => !t.completed).length,
+    alta: activeTasks.filter(t => t.priority === 'alta' && !t.completed).length,
     byCategory: {
-      trabalho: tasks.filter(t => t.category === 'trabalho').length,
-      pessoal: tasks.filter(t => t.category === 'pessoal').length,
-      estudos: tasks.filter(t => t.category === 'estudos').length,
-      saúde: tasks.filter(t => t.category === 'saúde').length,
-      financeiro: tasks.filter(t => t.category === 'financeiro').length,
+      trabalho: activeTasks.filter(t => t.category === 'trabalho').length,
+      pessoal: activeTasks.filter(t => t.category === 'pessoal').length,
+      estudos: activeTasks.filter(t => t.category === 'estudos').length,
+      saúde: activeTasks.filter(t => t.category === 'saúde').length,
+      financeiro: activeTasks.filter(t => t.category === 'financeiro').length,
     },
-    completionRate: tasks.length > 0
-      ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100)
+    completionRate: activeTasks.length > 0
+      ? Math.round((activeTasks.filter(t => t.completed).length / activeTasks.length) * 100)
       : 0,
   }
 
