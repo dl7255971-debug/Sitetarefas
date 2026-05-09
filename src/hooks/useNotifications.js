@@ -41,10 +41,14 @@ export function useNotifications(tasks, profile) {
 
     console.log('Enviando notificação:', title, options)
     try {
-      new Notification(title, {
-        icon: '/vite.svg',
+      const notification = new Notification(title, {
         ...options
       })
+
+      notification.onclick = () => {
+        window.focus()
+        notification.close()
+      }
     } catch (err) {
       console.error('Erro ao criar notificação:', err)
     }

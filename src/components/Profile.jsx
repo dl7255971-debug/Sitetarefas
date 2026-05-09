@@ -63,18 +63,6 @@ export default function Profile() {
     setIsUpdating(false)
   }
 
-  const handleTestNotification = async () => {
-    const granted = await requestPermission()
-    if (granted) {
-      sendNotification('Teste de Notificação ✅', {
-        body: 'Parabéns! Suas notificações do TaskFlow estão configuradas corretamente.',
-        tag: 'test-notification',
-        force: true
-      })
-    } else {
-      alert('Parece que as notificações estão bloqueadas no seu navegador. Por favor, autorize nas configurações do navegador (ícone de cadeado na barra de endereço).')
-    }
-  }
 
   const handleSaveProfile = async (e) => {
     e.preventDefault()
@@ -195,14 +183,6 @@ export default function Profile() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={handleTestNotification}
-                  className="text-[10px] bg-amber-500 text-amber-950 font-bold px-2 py-1 rounded hover:bg-amber-400 transition-colors z-10 cursor-pointer disabled:opacity-50"
-                  title="Testar notificações agora"
-                >
-                  TESTAR
-                </button>
                 <div className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -218,6 +198,12 @@ export default function Profile() {
                         const granted = await requestPermission()
                         if (!granted) {
                           alert('As notificações estão desativadas no seu navegador. Para que funcionem, você precisa autorizá-las nas configurações do navegador.')
+                        } else {
+                          // Feedback imediato ao ativar
+                          sendNotification('Notificações Ativadas! 🔔', {
+                            body: 'Você receberá alertas sobre suas tarefas importantes.',
+                            tag: 'welcome-notification'
+                          })
                         }
                       }
                     }}
