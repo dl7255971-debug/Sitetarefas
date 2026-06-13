@@ -5,6 +5,11 @@ const API_URL = "https://api.groq.com/openai/v1/chat/completions"
 const DEFAULT_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 const FALLBACK_MODEL = "llama-3.3-70b-versatile"
 
+// Debug: verificar se a chave foi carregada pelo Vite
+if (!API_KEY) {
+  console.warn('⚠️ VITE_GROQ_API_KEY não encontrada. Certifique-se de que o arquivo .env existe e reinicie o servidor de desenvolvimento (npm run dev).')
+}
+
 const formatTasksForAI = (currentTasks) => {
   if (!currentTasks || currentTasks.length === 0) {
     return 'O usuário não tem nenhuma tarefa criada no momento.'
@@ -38,6 +43,10 @@ export function useAI(tasks) {
   const [isTyping, setIsTyping] = useState(false)
 
   const callGroqAPI = async (chatMessages, model) => {
+    if (!API_KEY) {
+      throw new Error('CHAVE_NAO_CONFIGURADA')
+    }
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -51,6 +60,8 @@ export function useAI(tasks) {
     })
 
     if (!response.ok) {
+      const errorBody = await response.text()
+      console.error(`Groq API erro ${response.status}:`, errorBody)
       throw new Error(`Erro HTTP: ${response.status}`)
     }
 
@@ -112,10 +123,16 @@ Instruções adicionais:
       setMessages(prev => [...prev, newAIMessage])
     } catch (error) {
       console.error('Erro na chamada da API da Groq:', error)
+      let content = '⚠️ Desculpe, ocorreu um erro ao me comunicar com a API do assistente de produtividade. Verifique se a sua chave API e conexão de internet estão funcionando.'
+      
+      if (error.message === 'CHAVE_NAO_CONFIGURADA') {
+        content = '⚠️ A chave da API do Groq não foi encontrada. Certifique-se de que configurou o arquivo `.env` e reiniciou o servidor (`npm run dev`).'
+      }
+
       const errorMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: '⚠️ Desculpe, ocorreu um erro ao me comunicar com a API do assistente de produtividade. Verifique se a sua chave API e conexão de internet estão funcionando.',
+        content,
         timestamp: new Date().toISOString()
       }
       setMessages(prev => [...prev, errorMessage])
