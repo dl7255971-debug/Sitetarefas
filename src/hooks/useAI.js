@@ -1,5 +1,31 @@
 import { useState, useCallback } from 'react'
 
+const API_KEY = import.meta.env.VITE_GROQ_API_KEY
+const API_URL = "https://api.groq.com/openai/v1/chat/completions"
+const DEFAULT_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+const FALLBACK_MODEL = "llama-3.3-70b-versatile"
+
+const formatTasksForAI = (currentTasks) => {
+  if (!currentTasks || currentTasks.length === 0) {
+    return 'O usuário não tem nenhuma tarefa criada no momento.'
+  }
+  return currentTasks
+    .map((t, idx) => {
+      const status = t.completed ? 'Concluída' : 'Pendente'
+      const archived = t.archived ? ' (Arquivada)' : ''
+      const date = t.dueDate ? ` | Prazo: ${t.dueDate}` : ''
+      const time = t.due_time ? ` às ${t.due_time.substring(0, 5)}` : ''
+      const priority = ` | Prioridade: ${t.priority || 'média'}`
+      const category = ` | Categoria: ${t.category || 'pessoal'}`
+      const desc = t.description ? ` | Descrição: ${t.description}` : ''
+      const steps = t.subtasks && t.subtasks.length > 0 
+        ? ` | Etapas: ${t.subtasks.map(s => `${s.title} [${s.completed ? 'Concluída' : 'Pendente'}]`).join(', ')}`
+        : ''
+      return `${idx + 1}. [${status}] "${t.title}"${archived}${category}${priority}${date}${time}${desc}${steps}`
+    })
+    .join('\n')
+}
+
 export function useAI(tasks) {
   const [messages, setMessages] = useState([
     {
@@ -11,47 +37,28 @@ export function useAI(tasks) {
   ])
   const [isTyping, setIsTyping] = useState(false)
 
-  const generateResponse = (userMessage, currentTasks) => {
-    const text = userMessage.toLowerCase()
-    const pendingTasks = currentTasks.filter(t => !t.completed)
-    const highPriorityTasks = pendingTasks.filter(t => t.priority === 'alta')
+  const callGroqAPI = async (chatMessages, model) => {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: chatMessages
+      })
+    })
 
-    // Lógica simples baseada em palavras-chave e estado das tarefas
-    if (text.includes('o que devo fazer') || text.includes('por onde começar') || text.includes('próxima tarefa')) {
-      if (highPriorityTasks.length > 0) {
-        return `Sugiro que você comece pelas tarefas de alta prioridade. Você tem ${highPriorityTasks.length} pendente(s). A primeira da lista é: "${highPriorityTasks[0].title}".`
-      } else if (pendingTasks.length > 0) {
-        return `Você não tem tarefas de alta prioridade no momento. Sugiro focar em: "${pendingTasks[0].title}".`
-      } else {
-        return 'Sua lista está limpa! Aproveite o momento para descansar ou planejar os próximos passos.'
-      }
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status}`)
     }
 
-    if (text.includes('resumo') || text.includes('status') || text.includes('como estou')) {
-      const completed = currentTasks.filter(t => t.completed).length
-      return `Aqui está o seu resumo: Você tem ${currentTasks.length} tarefas no total, das quais ${completed} estão concluídas e ${pendingTasks.length} ainda estão pendentes. Você está indo muito bem!`
-    }
-
-    if (text.includes('sobrecarregado') || text.includes('muita coisa') || text.includes('cansado')) {
-      if (pendingTasks.length > 3) {
-        return `Parece que você tem muitas tarefas (${pendingTasks.length}). Respire fundo. Escolha apenas UMA tarefa fácil para começar, como "${pendingTasks.find(t => t.priority === 'baixa')?.title || pendingTasks[0].title}". Fazer algo pequeno ajuda a ganhar momento.`
-      }
-      return 'Foque em uma coisa de cada vez. Tente usar a técnica Pomodoro (25 minutos de foco, 5 de pausa) para não se esgotar.'
-    }
-    
-    if (text.includes('estudos') || text.includes('estudar')) {
-       const studyTasks = pendingTasks.filter(t => t.category === 'estudos')
-       if (studyTasks.length > 0) {
-           return `Você tem ${studyTasks.length} tarefa(s) de estudos pendente(s), como "${studyTasks[0].title}". Lembre-se de fazer pausas regulares para reter melhor a informação.`
-       }
-       return 'Você não tem tarefas focadas em estudos no momento. Deseja adicionar alguma?'
-    }
-
-    // Resposta padrão
-    return 'Entendi. Como um assistente virtual simulado, minha capacidade é limitada no momento, mas estou aqui para te ajudar a focar. Posso te dar um resumo das tarefas ou sugerir por onde começar!'
+    const data = await response.json()
+    return data.choices[0].message.content
   }
 
-  const sendMessage = useCallback((text) => {
+  const sendMessage = useCallback(async (text) => {
     if (!text.trim()) return
 
     const newUserMessage = {
@@ -64,19 +71,58 @@ export function useAI(tasks) {
     setMessages(prev => [...prev, newUserMessage])
     setIsTyping(true)
 
-    // Simular delay da "IA"
-    setTimeout(() => {
-      const aiResponseContent = generateResponse(text, tasks)
+    try {
+      const history = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }))
+      history.push({ role: 'user', content: text })
+
+      const systemPrompt = {
+        role: 'system',
+        content: `Você é um assistente de produtividade amigável, direto e útil. Responda sempre em português.
+Você tem acesso em tempo real à lista atual de tarefas do usuário. Responda a qualquer dúvida, analise a produtividade dele, dê conselhos de priorização e seja solícito.
+
+Abaixo está a lista atualizada de tarefas do usuário:
+${formatTasksForAI(tasks)}
+
+Instruções adicionais:
+1. Responda de forma clara, amigável e objetiva.
+2. Use formatação em Markdown (negritos, listas, tabelas) para deixar as respostas atraentes e fáceis de ler.
+3. Se o usuário estiver sobrecarregado, ajude-o a focar em apenas uma tarefa simples.`
+      }
+
+      const fullMessagesPayload = [systemPrompt, ...history]
+
+      let botReplyContent = ''
+      try {
+        botReplyContent = await callGroqAPI(fullMessagesPayload, DEFAULT_MODEL)
+      } catch (err) {
+        console.warn(`Falha com o modelo padrão ${DEFAULT_MODEL}. Tentando modelo fallback...`, err)
+        botReplyContent = await callGroqAPI(fullMessagesPayload, FALLBACK_MODEL)
+      }
+
       const newAIMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: aiResponseContent,
+        content: botReplyContent,
         timestamp: new Date().toISOString()
       }
+
       setMessages(prev => [...prev, newAIMessage])
+    } catch (error) {
+      console.error('Erro na chamada da API da Groq:', error)
+      const errorMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: '⚠️ Desculpe, ocorreu um erro ao me comunicar com a API do assistente de produtividade. Verifique se a sua chave API e conexão de internet estão funcionando.',
+        timestamp: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
       setIsTyping(false)
-    }, 1500)
-  }, [tasks])
+    }
+  }, [messages, tasks])
 
   return {
     messages,

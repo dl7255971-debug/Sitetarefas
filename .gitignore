@@ -25,3 +25,11 @@ dist-ssr
 
 # Agent directories
 .agents
+
+# Local env files (nunca commitar a chave secreta)
+.env
+.env.local
+.env.*.local
+# Exceção: .env.example é seguro (não contém chaves reais)
+!.env.example
+
